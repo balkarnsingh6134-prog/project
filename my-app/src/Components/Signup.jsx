@@ -28,7 +28,7 @@ function Signup() {
     e.preventDefault();
 
     try {
-   const res = await axios.post("https://project-tpfa.onrender.com/user/signup", data);
+   const res = await axios.post("${process.env.REACT_APP_BACKEND_URL}/user/signup", data);
 
       console.log(res.data);
 
