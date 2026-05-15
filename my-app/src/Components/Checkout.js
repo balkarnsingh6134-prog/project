@@ -44,7 +44,7 @@ function Checkout() {
 
     try {
       const id = toast.loading("Processing your order...", { position: "top-right" });
-      const response = await axios.post("https://project-tpfa.onrender.com/orders/place", orderData);
+      const response = await axios.post("https://project-buwi.onrender.com/orders/place", orderData);
 
       if (response.data.success) {
         toast.update(id, { 

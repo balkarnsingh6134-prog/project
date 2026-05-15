@@ -41,7 +41,7 @@ function Login() {
     e.preventDefault();
 
     try {
-     const response = await axios.post("${process.env.REACT_APP_BACKEND_URL}/user/login", data);
+     const response = await axios.post("https://project-buwi.onrender.com/user/login", data);
       const res = response.data;
 
       if (res.success === false) {

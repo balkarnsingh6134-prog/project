@@ -12,7 +12,7 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const API_BASE_URL = "https://project-tpfa.onrender.com/cart";
+  const API_BASE_URL = "https://project-buwi.onrender.com/cart";
 
   useEffect(() => {
     localStorage.setItem('cartItems', JSON.stringify(cartItems));

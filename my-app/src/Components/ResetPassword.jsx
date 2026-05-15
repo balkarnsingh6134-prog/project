@@ -15,7 +15,7 @@ function ResetPassword() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(`https://project-tpfa.onrender.com/user/reset-password/${id}`, { password });
+      const response = await axios.post(`https://project-buwi.onrender.com/user/reset-password/${id}`, { password });
       
       if (response.data.success) {
         toast.success("Password updated! You can now login.");
