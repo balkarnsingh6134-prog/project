@@ -39,31 +39,71 @@ function Login() {
     setData({ ...data, [e.target.name]: e.target.value });
   };
 
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     try {
-     const response = await axios.post("https://project-buwi.onrender.com/user/login", data);
+      // 1. Send the request
+      const response = await axios.post("https://project-buwi.onrender.com/user/login", data);
+      
+      // 2. Log the response to debug (Check this in your browser console!)
+      console.log("Server Response Data:", response.data);
+
       const res = response.data;
 
-      if (res.success === false) {
-        toast.error(res.message || "Invalid email or password", { toastId: "err-toast" });
-      } else {
+      // 3. Robust success check
+      if (res && (res.success === true || res.status === 200)) {
         toast.success(res.message || "Login Successful!", { toastId: "success-toast" });
 
         if (res.token) {
           localStorage.setItem("token", res.token);
         }
 
+        // Wait for deferred items to process before moving
         await processDeferredProduct();
+        
+        // Use replace: true so they can't go "back" into the login screen
         navigate('/Shop', { replace: true });
+      } else {
+        // This handles cases where status is 200 but backend sent success: false
+        toast.error(res.message || "Invalid email or password", { toastId: "err-toast" });
       }
+
     } catch (error) {
       console.error("Login Error:", error);
+      
+      // Check if the server sent a specific error message (like "User not found")
       const backendMessage = error.response?.data?.message;
       toast.error(backendMessage || "Server error! Please try again later.", { toastId: "server-err" });
     }
   };
+
+  // const handleSubmit = async (e) => {
+  //   e.preventDefault();
+
+  //   try {
+  //    const response = await axios.post("https://project-buwi.onrender.com/user/login", data);
+  //     const res = response.data;
+
+  //     if (res.success === false) {
+  //       toast.error(res.message || "Invalid email or password", { toastId: "err-toast" });
+  //     } else {
+  //       toast.success(res.message || "Login Successful!", { toastId: "success-toast" });
+
+  //       if (res.token) {
+  //         localStorage.setItem("token", res.token);
+  //       }
+
+  //       await processDeferredProduct();
+  //       navigate('/Shop', { replace: true });
+  //     }
+  //   } catch (error) {
+  //     console.error("Login Error:", error);
+  //     const backendMessage = error.response?.data?.message;
+  //     toast.error(backendMessage || "Server error! Please try again later.", { toastId: "server-err" });
+  //   }
+  // };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
