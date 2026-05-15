@@ -5,36 +5,41 @@ import jwt from 'jsonwebtoken';
 
 export const signUp = async (req, res) => {
     try {
-        const findEmail = await userDataSchema.findOne({ email: req.body.email });
+        const { email, password } = req.body;
+
+        // Check if email already exists
+        const findEmail = await userDataSchema.findOne({ email });
         console.log(findEmail, "okk");
+
         if (findEmail !== null) {
-            return res.json({
+            return res.status(400).json({
                 success: false,
                 status: 400,
-                message: "email already exist",
+                message: "Email already exists",
                 body: {},
             });
         } else {
-            const encpass = await bcrypt.hash(req.body.password, 10);
+            // Hash password before saving
+            const encpass = await bcrypt.hash(password, 10);
             const data = await userDataSchema.create({
                 ...req.body,
                 password: encpass,
             });
             console.log(data, "hii");
 
-            return res.json({
+            return res.status(201).json({
                 success: true,
-                status: 200,
-                message: "user created successfully",
+                status: 201,
+                message: "User created successfully",
                 body: data,
             });
         }
     } catch (error) {
         console.log(error);
-        return res.json({
+        return res.status(500).json({
             success: false,
-            status: 400,
-            message: error,
+            status: 500,
+            message: error.message || "Internal Server Error",
             body: {},
         });
     }
@@ -42,65 +47,73 @@ export const signUp = async (req, res) => {
 
 export const login = async (req, res) => {
     try {
-        const data = await userDataSchema.findOne({
-            email: req.body.email,
-        });
-        console.log(req.body.email, "req.body.email");
-        if (req.body.email == false) {
-            return res.json({
+        const { email, password } = req.body;
+        console.log(email, "Attempting login");
+
+        // Validation checks
+        if (!email) {
+            return res.status(400).json({
                 success: false,
                 status: 400,
                 message: "Email is required",
                 body: {},
             });
-        } else if (!req.body.password) {
-            return res.json({
+        } 
+        
+        if (!password) {
+            return res.status(400).json({
                 success: false,
                 status: 400,
                 message: "Password is required",
                 body: {},
             });
+        }
+
+        // Find user by email
+        const data = await userDataSchema.findOne({ email });
+
+        if (data == null) {
+            return res.status(404).json({
+                success: false,
+                status: 404,
+                message: "Email is not valid",
+                body: {},
+            });
         } else {
-            if (data == null) {
-                return res.json({
+            // Compare encrypted password
+            const decpass = await bcrypt.compare(password, data.password);
+            console.log(decpass, "Password Match Result");
+
+            if (decpass == false) {
+                return res.status(401).json({
                     success: false,
-                    status: 400,
-                    message: "email is not valid",
+                    status: 401,
+                    message: "Password does not match",
                     body: {},
                 });
             } else {
-                const decpass = await bcrypt.compare(req.body.password, data.password);
-                console.log(decpass, "decpass");
-                if (decpass == false) {
-                    return res.json({
-                        success: false,
-                        status: 400,
-                        message: "password is not match",
-                        body: {},
-                    });
-                } else {
-                    const token = jwt.sign(
-                        { email: data.email },
-                        process.env.JWT_SECRET || 'jwt_secret_123',
-                        { expiresIn: '1d' }
-                    );
+                // Generate JWT Token
+                const token = jwt.sign(
+                    { email: data.email, id: data._id },
+                    process.env.JWT_SECRET || 'jwt_secret_123',
+                    { expiresIn: '1d' }
+                );
 
-                    return res.json({
-                        success: true,
-                        status: 200, // Fixed status code 20 -> 200
-                        message: "user login successfully",
-                        token: token,
-                        body: data,
-                    });
-                }
+                return res.status(200).json({
+                    success: true,
+                    status: 200,
+                    message: "User logged in successfully",
+                    token: token,
+                    body: data,
+                });
             }
         }
     } catch (error) {
         console.log(error);
-        return res.json({
+        return res.status(500).json({
             success: false,
-            status: 400,
-            message: error,
+            status: 500,
+            message: error.message || "Internal Server Error",
             body: {},
         });
     }
@@ -111,7 +124,7 @@ export const findUsers = async (req, res) => {
         const data = await userDataSchema.find();
         const count = await userDataSchema.countDocuments();
         console.log(data, "All users here");
-        return res.json({
+        return res.status(200).json({
             success: true,
             status: 200,
             message: "All users are here",
@@ -120,10 +133,10 @@ export const findUsers = async (req, res) => {
         });
     } catch (error) {
         console.log(error);
-        return res.json({
+        return res.status(500).json({
             success: false,
-            status: 400,
-            message: error,
+            status: 500,
+            message: error.message,
             body: {}
         });
     }
@@ -133,7 +146,7 @@ export const findUserByIdByBody = async (req, res) => {
     try {
         const data = await userDataSchema.findById(req.body.id);
         console.log(data, "SingleUser");
-        return res.json({
+        return res.status(200).json({
             success: true,
             status: 200,
             message: "This is a single user",
@@ -141,14 +154,15 @@ export const findUserByIdByBody = async (req, res) => {
         });
     } catch (error) {
         console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 export const findUserByIdByParams = async (req, res) => {
     try {
-        const data = await userDataSchema.findById({ _id: req.params.id });
+        const data = await userDataSchema.findById(req.params.id);
         console.log(data, "user by params");
-        return res.json({
+        return res.status(200).json({
             success: true,
             status: 200,
             message: "This is a single user",
@@ -156,45 +170,53 @@ export const findUserByIdByParams = async (req, res) => {
         });
     } catch (error) {
         console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 export const userUpdate = async (req, res) => {
     try {
-        const encPass = await bcrypt.hash(req.body.password, 10);
+        let updateData = { ...req.body };
+        
+        // If password is being updated, hash it
+        if (req.body.password) {
+            updateData.password = await bcrypt.hash(req.body.password, 10);
+        }
+
         const data = await userDataSchema.findByIdAndUpdate(
-            { _id: req.body.id },
-            { ...req.body, password: encPass },
+            req.body.id,
+            updateData,
             { new: true }
         );
+
         console.log(data, "update user");
-        return res.json({
+        return res.status(200).json({
             success: true,
             status: 200,
-            message: "user updated successfully",
+            message: "User updated successfully",
             body: data,
         });
     } catch (error) {
         console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
 export const deleteUser = async (req, res) => {
     try {
-        const data = await userDataSchema.findByIdAndDelete({
-            _id: req.params.id
-        });
+        const data = await userDataSchema.findByIdAndDelete(req.params.id);
         const count = await userDataSchema.countDocuments();
         console.log(data, "user deleted");
-        return res.json({
+        return res.status(200).json({
             success: true,
             status: 200,
-            message: "user deleted successfully",
+            message: "User deleted successfully",
             body: count,
             data
         });
     } catch (error) {
         console.log(error);
+        return res.status(500).json({ success: false, message: error.message });
     }
 };
 
@@ -204,7 +226,7 @@ export const forgotPassword = async (req, res) => {
         const user = await userDataSchema.findOne({ email });
 
         if (!user) {
-            return res.json({
+            return res.status(404).json({
                 success: false,
                 status: 404,
                 message: "User with this email does not exist",
@@ -219,7 +241,8 @@ export const forgotPassword = async (req, res) => {
             },
         });
 
-        const resetLink = `http://localhost:3000/reset-password/${user._id}`;
+        // UPDATED: Use your live frontend URL instead of localhost
+        const resetLink = `https://project-1-m2un.onrender.com/reset-password/${user._id}`;
 
         const mailOptions = {
             from: "balkarnsingh6134@gmail.com",
@@ -229,7 +252,7 @@ export const forgotPassword = async (req, res) => {
                 <div style="font-family: Arial, sans-serif; padding: 20px; border: 1px solid #eee;">
                     <h2>Password Reset Request</h2>
                     <p>Click the button below to reset your password. This link is valid for your account.</p>
-                    <a href="${resetLink}" style="background: #ff4b2b; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">Reset Password</a>
+                    <a href="${resetLink}" style="background: #06c4dd; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
                     <p style="margin-top: 20px;">If you didn't request this, please ignore this email.</p>
                 </div>
             `,
@@ -237,7 +260,7 @@ export const forgotPassword = async (req, res) => {
 
         await transporter.sendMail(mailOptions);
 
-        return res.json({
+        return res.status(200).json({
             success: true,
             status: 200,
             message: "Reset link sent to your email successfully",
@@ -245,7 +268,7 @@ export const forgotPassword = async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        return res.json({ success: false, status: 500, message: "Internal Server Error" });
+        return res.status(500).json({ success: false, status: 500, message: "Internal Server Error" });
     }
 };
 
@@ -253,6 +276,10 @@ export const resetPassword = async (req, res) => {
     try {
         const { id } = req.params;
         const { password } = req.body;
+
+        if (!password) {
+            return res.status(400).json({ success: false, message: "New password is required" });
+        }
 
         const salt = await bcrypt.genSalt(10);
         const encryptedPassword = await bcrypt.hash(password, salt);
@@ -264,14 +291,14 @@ export const resetPassword = async (req, res) => {
         );
 
         if (!updatedUser) {
-            return res.json({
+            return res.status(404).json({
                 success: false,
-                status: 400,
+                status: 404,
                 message: "Invalid User ID or User not found",
             });
         }
 
-        return res.json({
+        return res.status(200).json({
             success: true,
             status: 200,
             message: "Password reset successfully! You can now login.",
@@ -279,6 +306,6 @@ export const resetPassword = async (req, res) => {
 
     } catch (error) {
         console.log(error);
-        return res.json({ success: false, status: 500, message: "Internal Server Error" });
+        return res.status(500).json({ success: false, status: 500, message: "Internal Server Error" });
     }
 };
