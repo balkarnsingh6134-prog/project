@@ -6,8 +6,6 @@ import { toast } from "react-toastify";
 function Signup() {
   const navigate = useNavigate();
 
-  
-
   const [data, setData] = useState({
     name: "",
     email: "",
@@ -15,9 +13,11 @@ function Signup() {
     phone: "",
   });
 
-  // Dummy function to keep search button functional
+  // Function to handle product searching
   const handleSearch = () => {
-    // Add your search logic here
+    const query = document.getElementById('searchBox')?.value;
+    console.log("Searching for:", query);
+    // Add your search navigation or filtering logic here
   };
 
   // Handle input changes dynamically
@@ -30,20 +30,25 @@ function Signup() {
     e.preventDefault();
 
     try {
-   const res = await axios.post("https://project-buwi.onrender.com/user/signup", data);
+      // Pointing to your live Render backend
+      const res = await axios.post("https://project-buwi.onrender.com/user/signup", data);
 
-      console.log(res.data);
+      console.log("Server Response:", res.data);
 
+      // Check for successful status codes (200 OK or 201 Created)
       if (res.status === 200 || res.status === 201) {
-        toast.success(res.data.message || "Signup Successful!");
-        navigate("/login");
-      } else {
-        toast.error(res.data.message || "Signup failed");
+        if (res.data.success !== false) {
+          toast.success(res.data.message || "Signup Successful!", { toastId: "signup-success" });
+          navigate("/login");
+        } else {
+          toast.error(res.data.message || "Signup failed. Please try again.", { toastId: "signup-fail" });
+        }
       }
     } catch (error) {
-      console.error(error);
-      const errorMsg = error.response?.data?.message || "Something went wrong!";
-      toast.error(errorMsg);
+      console.error("Signup Error:", error);
+      // Extracts the specific error message from your backend if available
+      const errorMsg = error.response?.data?.message || "Something went wrong! Please check your connection.";
+      toast.error(errorMsg, { toastId: "signup-error" });
     }
   };
 
@@ -57,7 +62,12 @@ function Signup() {
         </div>
 
         <div className="search-box">
-          <input type="text" id="searchBox" placeholder="Search product" />
+          <input 
+            type="text" 
+            id="searchBox" 
+            placeholder="Search product" 
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+          />
           <button onClick={handleSearch}>Search</button>
         </div>
 
@@ -87,7 +97,7 @@ function Signup() {
         <div className="container mt-5">
           <div className="row justify-content-center">
             <div className="col-md-8 col-lg-6 login-card shadow">
-              <h2 className="text-center">Create an account</h2>
+              <h2 className="text-center mt-3">Create an account</h2>
               <form className="mt-4" onSubmit={handleSubmit}>
                 
                 {/* Name Input */}
@@ -146,11 +156,11 @@ function Signup() {
                   />
                 </div>
 
-                <button type="submit" className="btn btn-dark w-100 mt-3">
+                <button type="submit" className="btn btn-dark w-100 mt-3 mb-3">
                   Signup
                 </button>
 
-                <p className="text-center mt-4">
+                <p className="text-center mb-4">
                   Already have an account?{" "}
                   <span
                     style={{ cursor: "pointer", color: "#06c4dd", textDecoration: "underline" }}
