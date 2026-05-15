@@ -6,6 +6,8 @@ import { toast } from "react-toastify";
 function Signup() {
   const navigate = useNavigate();
 
+  
+
   const [data, setData] = useState({
     name: "",
     email: "",

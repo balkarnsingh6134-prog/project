@@ -5,6 +5,8 @@ import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useCart } from "./CartContext";
 
 function Login() {
+
+  const API = axios.create({ baseURL: 'https://project-buwi.onrender.com' });
   const navigate = useNavigate();
   const location = useLocation();
   const { processDeferredProduct, setCartItems } = useCart();
@@ -41,7 +43,7 @@ function Login() {
     e.preventDefault();
 
     try {
-     const response = await axios.post("https://project-buwi.onrender.com/user/login", data);
+     const response = API.post("/user/login", data);
       const res = response.data;
 
       if (res.success === false) {
